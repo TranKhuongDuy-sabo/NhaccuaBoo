@@ -10,13 +10,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Mở khóa CORS cho mọi nguồn truy cập (để sau này đưa lên mạng không bị lỗi)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy =>
-        {
-            policy.AllowAnyOrigin() 
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
 });
 
 builder.Services.AddControllers();

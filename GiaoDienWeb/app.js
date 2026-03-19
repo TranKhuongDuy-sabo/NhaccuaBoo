@@ -14,8 +14,8 @@ const volumeBar = document.getElementById('volumeBar');
 const currentTimeDisplay = document.getElementById('currentTimeDisplay');
 const totalTimeDisplay = document.getElementById('totalTimeDisplay');
 
-const API_URL = 'http://localhost:5237/api/music';
-const PLAYLIST_API = 'http://localhost:5237/api/playlist';
+const API_URL = 'https://nhaccuaboo-production.up.railway.app/api/music';
+const PLAYLIST_API = 'https://nhaccuaboo-production.up.railway.app/api/playlist';
 
 let currentPlaylist = [];
 let currentSongIndex = -1;
