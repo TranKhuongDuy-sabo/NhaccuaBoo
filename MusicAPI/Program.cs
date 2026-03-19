@@ -22,6 +22,12 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated(); // Lệnh thần thánh: Nếu chưa có bảng thì tự tạo cho con!
+}
+
 // Kích hoạt CORS (Phải nằm trên MapControllers)
 app.UseCors("AllowAll");
 
