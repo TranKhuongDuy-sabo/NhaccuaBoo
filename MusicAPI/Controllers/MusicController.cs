@@ -59,11 +59,7 @@ namespace MusicAPI.Controllers
                 if (streamInfo == null)
                     return NotFound(new { message = "Không tìm thấy luồng âm thanh." });
 
-                // BẮT ĐẦU MA THUẬT: Tải luồng nhạc thực tế về Server
-                var stream = await _youtube.Videos.Streams.GetAsync(streamInfo);
-
-                // TRẢ LUỒNG NHẠC VỀ CHO ĐIỆN THOẠI + BẬT TÍNH NĂNG BĂM NHỎ (Range Processing)
-                return File(stream, "audio/mp4", enableRangeProcessing: true);
+                return Redirect(streamInfo.Url);
             }
             catch (Exception ex)
             {

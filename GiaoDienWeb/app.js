@@ -431,8 +431,6 @@ async function playSong(index, isAutoRepeat = false) {
     if (!isAutoRepeat) hasRepeatedOnce = false;
 
     audioPlayer.pause();
-    // Thủ thuật mở khóa loa iOS (Bạn đã chèn chuẩn rồi)
-    audioPlayer.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
     audioPlayer.play().catch(e => {});
     
     renderPlaylistUI(); 
@@ -443,8 +441,6 @@ async function playSong(index, isAutoRepeat = false) {
     document.getElementById('playerAuthor').innerText = song.author;
 
     try {
-        // 👉 ĐÃ SỬA CHỖ NÀY: Xóa đoạn fetch lấy JSON. Gán thẳng link API của bạn vào Audio.
-        // Trình duyệt điện thoại sẽ tự động kết nối và tải nhạc từ từ (kể cả nhạc dài 2 tiếng).
         audioPlayer.src = `${API_URL}/stream?videoId=${song.id}`;
         audioPlayer.play().catch(e => {
             console.log("Lỗi chặn AutoPlay trên Mobile:", e);
