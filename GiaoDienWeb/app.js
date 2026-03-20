@@ -122,18 +122,48 @@ function formatTime(seconds) {
 }
 
 audioPlayer.addEventListener('timeupdate', () => {
-    if (audioPlayer.duration) {
-        const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+    let durationInSeconds = audioPlayer.duration;
+    let displayDurationText = formatTime(audioPlayer.duration);
+
+    // --- FIX LỖI THỜI GIAN CHO MOBILE (iOS) ---
+    if (currentSongIndex >= 0 && currentPlaylist[currentSongIndex]) {
+        const song = currentPlaylist[currentSongIndex];
+        if (song.duration) {
+            displayDurationText = song.duration; // Hiển thị chuẩn số phút (VD: 4:30)
+            
+            // Đổi 4:30 thành tổng số giây để thanh chạy chính xác
+            const parts = song.duration.toString().split(':');
+            if (parts.length === 2) {
+                durationInSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+            }
+        }
+    }
+
+    if (durationInSeconds) {
+        const progressPercent = (audioPlayer.currentTime / durationInSeconds) * 100;
         progressBar.value = progressPercent;
         progressBar.style.setProperty('--progress', `${progressPercent}%`); 
         currentTimeDisplay.innerText = formatTime(audioPlayer.currentTime);
-        totalTimeDisplay.innerText = formatTime(audioPlayer.duration);
+        totalTimeDisplay.innerText = displayDurationText;
     }
 });
 
 progressBar.addEventListener('input', () => {
-    if (audioPlayer.duration) {
-        audioPlayer.currentTime = (progressBar.value / 100) * audioPlayer.duration;
+    let realDuration = audioPlayer.duration;
+
+    // Lấy số giây chuẩn (Ví dụ 270s cho bài 4:30) để tính toán vị trí tua
+    if (currentSongIndex >= 0 && currentPlaylist[currentSongIndex]) {
+        const song = currentPlaylist[currentSongIndex];
+        if (song.duration) {
+            const parts = song.duration.toString().split(':');
+            if (parts.length === 2) {
+                realDuration = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+            }
+        }
+    }
+
+    if (realDuration) {
+        audioPlayer.currentTime = (progressBar.value / 100) * realDuration;
         progressBar.style.setProperty('--progress', `${progressBar.value}%`);
     }
 });
@@ -358,11 +388,17 @@ function renderPlaylistUI() {
         resultsDiv.appendChild(songDiv);
     });
 
+    const existingSortable = Sortable.get(resultsDiv);
+    if (existingSortable) existingSortable.destroy();
+
     // KÍCH HOẠT KÉO THẢ VÀ LƯU BỘ NHỚ
     if (currentViewMode === 'playlist') {
         Sortable.create(resultsDiv, {
             animation: 250, 
             ghostClass: 'dragging-ghost', 
+            delay: 200,             // Phải nhấn giữ 0.2 giây mới bắt đầu kéo
+            delayOnTouchOnly: true, // Chỉ áp dụng cái độ trễ này cho màn hình cảm ứng (mobile)
+            touchStartThreshold: 5, // Nếu ngón tay vô tình trượt 5px, nó sẽ hiểu là lướt chứ không phải kéo
             onEnd: function (evt) {
                 // Di chuyển bài hát trong mảng
                 const movedItem = currentPlaylist.splice(evt.oldIndex, 1)[0];
@@ -395,6 +431,10 @@ async function playSong(index, isAutoRepeat = false) {
     if (!isAutoRepeat) hasRepeatedOnce = false;
 
     audioPlayer.pause();
+    // Thủ thuật mở khóa loa iOS (Bạn đã chèn chuẩn rồi)
+    audioPlayer.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+    audioPlayer.play().catch(e => {});
+    
     renderPlaylistUI(); 
 
     document.getElementById('playerThumb').src = song.thumbnail;
@@ -403,12 +443,12 @@ async function playSong(index, isAutoRepeat = false) {
     document.getElementById('playerAuthor').innerText = song.author;
 
     try {
-        const response = await fetch(`${API_URL}/stream?videoId=${song.id}`);
-        if (!response.ok) return autoPlayNext();
-        
-        const data = await response.json();
-        audioPlayer.src = data.url;
-        audioPlayer.play();
+        // 👉 ĐÃ SỬA CHỖ NÀY: Xóa đoạn fetch lấy JSON. Gán thẳng link API của bạn vào Audio.
+        // Trình duyệt điện thoại sẽ tự động kết nối và tải nhạc từ từ (kể cả nhạc dài 2 tiếng).
+        audioPlayer.src = `${API_URL}/stream?videoId=${song.id}`;
+        audioPlayer.play().catch(e => {
+            console.log("Lỗi chặn AutoPlay trên Mobile:", e);
+        });
 
         if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
@@ -420,7 +460,9 @@ async function playSong(index, isAutoRepeat = false) {
             navigator.mediaSession.setActionHandler('nexttrack', () => autoPlayNext()); 
             navigator.mediaSession.setActionHandler('previoustrack', playPrevious);
         }
-    } catch (error) { autoPlayNext(); }
+    } catch (error) { 
+        autoPlayNext(); 
+    }
 }
 
 audioPlayer.addEventListener('ended', autoPlayNext);
