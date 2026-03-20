@@ -59,7 +59,8 @@ namespace MusicAPI.Controllers
                 if (streamInfo == null)
                     return NotFound(new { message = "Không tìm thấy luồng âm thanh." });
 
-                return Redirect(streamInfo.Url);
+                var stream = await _youtube.Videos.Streams.GetAsync(streamInfo);
+                return File(stream, "audio/mp4", enableRangeProcessing: true);
             }
             catch (Exception ex)
             {
